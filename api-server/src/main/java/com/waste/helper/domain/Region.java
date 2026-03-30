@@ -43,12 +43,12 @@ public class Region implements Serializable {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "region")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = { "region" }, allowSetters = true)
-    private Set<DisposalGuide> disposalGuideses = new HashSet<>();
+    private Set<DisposalGuide> disposalGuides = new HashSet<>();
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "region")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = { "user", "region" }, allowSetters = true)
-    private Set<FavoriteRegion> favoriteRegionses = new HashSet<>();
+    private Set<FavoriteRegion> favoriteRegions = new HashSet<>();
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -117,64 +117,64 @@ public class Region implements Serializable {
         this.emdCode = emdCode;
     }
 
-    public Set<DisposalGuide> getDisposalGuideses() {
-        return this.disposalGuideses;
+    public Set<DisposalGuide> getDisposalGuides() {
+        return this.disposalGuides;
     }
 
-    public void setDisposalGuideses(Set<DisposalGuide> disposalGuides) {
-        if (this.disposalGuideses != null) {
-            this.disposalGuideses.forEach(i -> i.setRegion(null));
+    public void setDisposalGuides(Set<DisposalGuide> disposalGuides) {
+        if (this.disposalGuides != null) {
+            this.disposalGuides.forEach(i -> i.setRegion(null));
         }
         if (disposalGuides != null) {
             disposalGuides.forEach(i -> i.setRegion(this));
         }
-        this.disposalGuideses = disposalGuides;
+        this.disposalGuides = disposalGuides;
     }
 
-    public Region disposalGuideses(Set<DisposalGuide> disposalGuides) {
-        this.setDisposalGuideses(disposalGuides);
+    public Region disposalGuides(Set<DisposalGuide> disposalGuides) {
+        this.setDisposalGuides(disposalGuides);
         return this;
     }
 
     public Region addDisposalGuides(DisposalGuide disposalGuide) {
-        this.disposalGuideses.add(disposalGuide);
+        this.disposalGuides.add(disposalGuide);
         disposalGuide.setRegion(this);
         return this;
     }
 
     public Region removeDisposalGuides(DisposalGuide disposalGuide) {
-        this.disposalGuideses.remove(disposalGuide);
+        this.disposalGuides.remove(disposalGuide);
         disposalGuide.setRegion(null);
         return this;
     }
 
-    public Set<FavoriteRegion> getFavoriteRegionses() {
-        return this.favoriteRegionses;
+    public Set<FavoriteRegion> getFavoriteRegions() {
+        return this.favoriteRegions;
     }
 
-    public void setFavoriteRegionses(Set<FavoriteRegion> favoriteRegions) {
-        if (this.favoriteRegionses != null) {
-            this.favoriteRegionses.forEach(i -> i.setRegion(null));
+    public void setFavoriteRegions(Set<FavoriteRegion> favoriteRegions) {
+        if (this.favoriteRegions != null) {
+            this.favoriteRegions.forEach(i -> i.setRegion(null));
         }
         if (favoriteRegions != null) {
             favoriteRegions.forEach(i -> i.setRegion(this));
         }
-        this.favoriteRegionses = favoriteRegions;
+        this.favoriteRegions = favoriteRegions;
     }
 
-    public Region favoriteRegionses(Set<FavoriteRegion> favoriteRegions) {
-        this.setFavoriteRegionses(favoriteRegions);
+    public Region favoriteRegions(Set<FavoriteRegion> favoriteRegions) {
+        this.setFavoriteRegions(favoriteRegions);
         return this;
     }
 
     public Region addFavoriteRegions(FavoriteRegion favoriteRegion) {
-        this.favoriteRegionses.add(favoriteRegion);
+        this.favoriteRegions.add(favoriteRegion);
         favoriteRegion.setRegion(this);
         return this;
     }
 
     public Region removeFavoriteRegions(FavoriteRegion favoriteRegion) {
-        this.favoriteRegionses.remove(favoriteRegion);
+        this.favoriteRegions.remove(favoriteRegion);
         favoriteRegion.setRegion(null);
         return this;
     }

@@ -32,7 +32,7 @@ public class WasteImage implements Serializable {
     private String thumbnailUrl;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = { "user", "wasteImageses", "feedbackses" }, allowSetters = true)
+    @JsonIgnoreProperties(value = { "user", "wasteImages", "feedbacks" }, allowSetters = true)
     private WasteClassification wasteClassification;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here

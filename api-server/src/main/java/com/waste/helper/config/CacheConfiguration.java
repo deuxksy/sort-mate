@@ -76,6 +76,18 @@ public class CacheConfiguration {
             createCache(cm, com.waste.helper.domain.User.class.getName(), jcacheConfiguration);
             createCache(cm, com.waste.helper.domain.Authority.class.getName(), jcacheConfiguration);
             createCache(cm, com.waste.helper.domain.User.class.getName() + ".authorities", jcacheConfiguration);
+            createCache(cm, com.waste.helper.domain.WasteClassification.class.getName(), jcacheConfiguration);
+            createCache(cm, com.waste.helper.domain.WasteClassification.class.getName() + ".wasteImages", jcacheConfiguration);
+            createCache(cm, com.waste.helper.domain.WasteClassification.class.getName() + ".feedbacks", jcacheConfiguration);
+            createCache(cm, com.waste.helper.domain.Region.class.getName(), jcacheConfiguration);
+            createCache(cm, com.waste.helper.domain.Region.class.getName() + ".disposalGuides", jcacheConfiguration);
+            createCache(cm, com.waste.helper.domain.Region.class.getName() + ".favoriteRegions", jcacheConfiguration);
+            createCache(cm, com.waste.helper.domain.DisposalGuide.class.getName(), jcacheConfiguration);
+            createCache(cm, com.waste.helper.domain.SearchHistory.class.getName(), jcacheConfiguration);
+            createCache(cm, com.waste.helper.domain.FavoriteRegion.class.getName(), jcacheConfiguration);
+            createCache(cm, com.waste.helper.domain.NotificationSetting.class.getName(), jcacheConfiguration);
+            createCache(cm, com.waste.helper.domain.WasteImage.class.getName(), jcacheConfiguration);
+            createCache(cm, com.waste.helper.domain.Feedback.class.getName(), jcacheConfiguration);
             // jhipster-needle-redis-add-entry
         };
     }

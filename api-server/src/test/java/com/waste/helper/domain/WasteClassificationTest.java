@@ -32,19 +32,19 @@ class WasteClassificationTest {
         WasteImage wasteImageBack = getWasteImageRandomSampleGenerator();
 
         wasteClassification.addWasteImages(wasteImageBack);
-        assertThat(wasteClassification.getWasteImageses()).containsOnly(wasteImageBack);
+        assertThat(wasteClassification.getWasteImages()).containsOnly(wasteImageBack);
         assertThat(wasteImageBack.getWasteClassification()).isEqualTo(wasteClassification);
 
         wasteClassification.removeWasteImages(wasteImageBack);
-        assertThat(wasteClassification.getWasteImageses()).doesNotContain(wasteImageBack);
+        assertThat(wasteClassification.getWasteImages()).doesNotContain(wasteImageBack);
         assertThat(wasteImageBack.getWasteClassification()).isNull();
 
-        wasteClassification.wasteImageses(new HashSet<>(Set.of(wasteImageBack)));
-        assertThat(wasteClassification.getWasteImageses()).containsOnly(wasteImageBack);
+        wasteClassification.wasteImages(new HashSet<>(Set.of(wasteImageBack)));
+        assertThat(wasteClassification.getWasteImages()).containsOnly(wasteImageBack);
         assertThat(wasteImageBack.getWasteClassification()).isEqualTo(wasteClassification);
 
-        wasteClassification.setWasteImageses(new HashSet<>());
-        assertThat(wasteClassification.getWasteImageses()).doesNotContain(wasteImageBack);
+        wasteClassification.setWasteImages(new HashSet<>());
+        assertThat(wasteClassification.getWasteImages()).doesNotContain(wasteImageBack);
         assertThat(wasteImageBack.getWasteClassification()).isNull();
     }
 
@@ -54,19 +54,19 @@ class WasteClassificationTest {
         Feedback feedbackBack = getFeedbackRandomSampleGenerator();
 
         wasteClassification.addFeedbacks(feedbackBack);
-        assertThat(wasteClassification.getFeedbackses()).containsOnly(feedbackBack);
+        assertThat(wasteClassification.getFeedbacks()).containsOnly(feedbackBack);
         assertThat(feedbackBack.getWasteClassification()).isEqualTo(wasteClassification);
 
         wasteClassification.removeFeedbacks(feedbackBack);
-        assertThat(wasteClassification.getFeedbackses()).doesNotContain(feedbackBack);
+        assertThat(wasteClassification.getFeedbacks()).doesNotContain(feedbackBack);
         assertThat(feedbackBack.getWasteClassification()).isNull();
 
-        wasteClassification.feedbackses(new HashSet<>(Set.of(feedbackBack)));
-        assertThat(wasteClassification.getFeedbackses()).containsOnly(feedbackBack);
+        wasteClassification.feedbacks(new HashSet<>(Set.of(feedbackBack)));
+        assertThat(wasteClassification.getFeedbacks()).containsOnly(feedbackBack);
         assertThat(feedbackBack.getWasteClassification()).isEqualTo(wasteClassification);
 
-        wasteClassification.setFeedbackses(new HashSet<>());
-        assertThat(wasteClassification.getFeedbackses()).doesNotContain(feedbackBack);
+        wasteClassification.setFeedbacks(new HashSet<>());
+        assertThat(wasteClassification.getFeedbacks()).doesNotContain(feedbackBack);
         assertThat(feedbackBack.getWasteClassification()).isNull();
     }
 }

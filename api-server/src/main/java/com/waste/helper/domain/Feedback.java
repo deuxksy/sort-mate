@@ -38,7 +38,7 @@ public class Feedback implements Serializable {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = { "user", "wasteImageses", "feedbackses" }, allowSetters = true)
+    @JsonIgnoreProperties(value = { "user", "wasteImages", "feedbacks" }, allowSetters = true)
     private WasteClassification wasteClassification;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here

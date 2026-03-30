@@ -55,12 +55,12 @@ public class WasteClassification implements Serializable {
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "wasteClassification")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = { "wasteClassification" }, allowSetters = true)
-    private Set<WasteImage> wasteImageses = new HashSet<>();
+    private Set<WasteImage> wasteImages = new HashSet<>();
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "wasteClassification")
     @Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
     @JsonIgnoreProperties(value = { "user", "wasteClassification" }, allowSetters = true)
-    private Set<Feedback> feedbackses = new HashSet<>();
+    private Set<Feedback> feedbacks = new HashSet<>();
 
     // jhipster-needle-entity-add-field - JHipster will add fields here
 
@@ -155,64 +155,64 @@ public class WasteClassification implements Serializable {
         return this;
     }
 
-    public Set<WasteImage> getWasteImageses() {
-        return this.wasteImageses;
+    public Set<WasteImage> getWasteImages() {
+        return this.wasteImages;
     }
 
-    public void setWasteImageses(Set<WasteImage> wasteImages) {
-        if (this.wasteImageses != null) {
-            this.wasteImageses.forEach(i -> i.setWasteClassification(null));
+    public void setWasteImages(Set<WasteImage> wasteImages) {
+        if (this.wasteImages != null) {
+            this.wasteImages.forEach(i -> i.setWasteClassification(null));
         }
         if (wasteImages != null) {
             wasteImages.forEach(i -> i.setWasteClassification(this));
         }
-        this.wasteImageses = wasteImages;
+        this.wasteImages = wasteImages;
     }
 
-    public WasteClassification wasteImageses(Set<WasteImage> wasteImages) {
-        this.setWasteImageses(wasteImages);
+    public WasteClassification wasteImages(Set<WasteImage> wasteImages) {
+        this.setWasteImages(wasteImages);
         return this;
     }
 
     public WasteClassification addWasteImages(WasteImage wasteImage) {
-        this.wasteImageses.add(wasteImage);
+        this.wasteImages.add(wasteImage);
         wasteImage.setWasteClassification(this);
         return this;
     }
 
     public WasteClassification removeWasteImages(WasteImage wasteImage) {
-        this.wasteImageses.remove(wasteImage);
+        this.wasteImages.remove(wasteImage);
         wasteImage.setWasteClassification(null);
         return this;
     }
 
-    public Set<Feedback> getFeedbackses() {
-        return this.feedbackses;
+    public Set<Feedback> getFeedbacks() {
+        return this.feedbacks;
     }
 
-    public void setFeedbackses(Set<Feedback> feedbacks) {
-        if (this.feedbackses != null) {
-            this.feedbackses.forEach(i -> i.setWasteClassification(null));
+    public void setFeedbacks(Set<Feedback> feedbacks) {
+        if (this.feedbacks != null) {
+            this.feedbacks.forEach(i -> i.setWasteClassification(null));
         }
         if (feedbacks != null) {
             feedbacks.forEach(i -> i.setWasteClassification(this));
         }
-        this.feedbackses = feedbacks;
+        this.feedbacks = feedbacks;
     }
 
-    public WasteClassification feedbackses(Set<Feedback> feedbacks) {
-        this.setFeedbackses(feedbacks);
+    public WasteClassification feedbacks(Set<Feedback> feedbacks) {
+        this.setFeedbacks(feedbacks);
         return this;
     }
 
     public WasteClassification addFeedbacks(Feedback feedback) {
-        this.feedbackses.add(feedback);
+        this.feedbacks.add(feedback);
         feedback.setWasteClassification(this);
         return this;
     }
 
     public WasteClassification removeFeedbacks(Feedback feedback) {
-        this.feedbackses.remove(feedback);
+        this.feedbacks.remove(feedback);
         feedback.setWasteClassification(null);
         return this;
     }

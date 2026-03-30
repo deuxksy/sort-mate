@@ -40,7 +40,7 @@ public class DisposalGuide implements Serializable {
     private Source source;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = { "disposalGuideses", "favoriteRegionses" }, allowSetters = true)
+    @JsonIgnoreProperties(value = { "disposalGuides", "favoriteRegions" }, allowSetters = true)
     private Region region;
 
     // jhipster-needle-entity-add-field - JHipster will add fields here

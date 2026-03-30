@@ -32,19 +32,19 @@ class RegionTest {
         DisposalGuide disposalGuideBack = getDisposalGuideRandomSampleGenerator();
 
         region.addDisposalGuides(disposalGuideBack);
-        assertThat(region.getDisposalGuideses()).containsOnly(disposalGuideBack);
+        assertThat(region.getDisposalGuides()).containsOnly(disposalGuideBack);
         assertThat(disposalGuideBack.getRegion()).isEqualTo(region);
 
         region.removeDisposalGuides(disposalGuideBack);
-        assertThat(region.getDisposalGuideses()).doesNotContain(disposalGuideBack);
+        assertThat(region.getDisposalGuides()).doesNotContain(disposalGuideBack);
         assertThat(disposalGuideBack.getRegion()).isNull();
 
-        region.disposalGuideses(new HashSet<>(Set.of(disposalGuideBack)));
-        assertThat(region.getDisposalGuideses()).containsOnly(disposalGuideBack);
+        region.disposalGuides(new HashSet<>(Set.of(disposalGuideBack)));
+        assertThat(region.getDisposalGuides()).containsOnly(disposalGuideBack);
         assertThat(disposalGuideBack.getRegion()).isEqualTo(region);
 
-        region.setDisposalGuideses(new HashSet<>());
-        assertThat(region.getDisposalGuideses()).doesNotContain(disposalGuideBack);
+        region.setDisposalGuides(new HashSet<>());
+        assertThat(region.getDisposalGuides()).doesNotContain(disposalGuideBack);
         assertThat(disposalGuideBack.getRegion()).isNull();
     }
 
@@ -54,19 +54,19 @@ class RegionTest {
         FavoriteRegion favoriteRegionBack = getFavoriteRegionRandomSampleGenerator();
 
         region.addFavoriteRegions(favoriteRegionBack);
-        assertThat(region.getFavoriteRegionses()).containsOnly(favoriteRegionBack);
+        assertThat(region.getFavoriteRegions()).containsOnly(favoriteRegionBack);
         assertThat(favoriteRegionBack.getRegion()).isEqualTo(region);
 
         region.removeFavoriteRegions(favoriteRegionBack);
-        assertThat(region.getFavoriteRegionses()).doesNotContain(favoriteRegionBack);
+        assertThat(region.getFavoriteRegions()).doesNotContain(favoriteRegionBack);
         assertThat(favoriteRegionBack.getRegion()).isNull();
 
-        region.favoriteRegionses(new HashSet<>(Set.of(favoriteRegionBack)));
-        assertThat(region.getFavoriteRegionses()).containsOnly(favoriteRegionBack);
+        region.favoriteRegions(new HashSet<>(Set.of(favoriteRegionBack)));
+        assertThat(region.getFavoriteRegions()).containsOnly(favoriteRegionBack);
         assertThat(favoriteRegionBack.getRegion()).isEqualTo(region);
 
-        region.setFavoriteRegionses(new HashSet<>());
-        assertThat(region.getFavoriteRegionses()).doesNotContain(favoriteRegionBack);
+        region.setFavoriteRegions(new HashSet<>());
+        assertThat(region.getFavoriteRegions()).doesNotContain(favoriteRegionBack);
         assertThat(favoriteRegionBack.getRegion()).isNull();
     }
 }
