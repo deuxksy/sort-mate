@@ -15,9 +15,6 @@
 - **일관성(Consistency)**: 기존 프로젝트의 코딩 스타일(들여쓰기, 네이밍 컨벤션, 패턴)을 최우선으로 준수합니다.
 - **주석**: 코드가 *무엇(What)*을 하는지보다 *왜(Why)* 그렇게 작성되었는지에 집중합니다. 뻔한 주석은 작성하지 않습니다.
 - **안전성**: 에러 핸들링(Error Handling)과 엣지 케이스(Edge Cases)를 항상 고려합니다.
-- **라이브러리**:
-  - **AI**: [Tailscale Aperture](https://tailscale.com/docs/features/aperture) [API](https://ai.bun-bull.ts.net/aperture/openapi.json) 를 사용한다.
-  - **알림**: [PushOver](https://pushover.net/api) 를 이용한 iOS, Android, Desktop(Web browser) 대상으로 한다.
 - **문서**: **Always use Context7 MCP when I need library/API documentation, code generation, setup or configuration steps without me having to explicitly ask.**
 
 ## 🛡️ Operations & Safety

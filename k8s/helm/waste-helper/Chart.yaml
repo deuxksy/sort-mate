@@ -1,0 +1,6 @@
+apiVersion: v2
+name: waste-helper
+description: AI 폐기물 처리 도우미 Helm Chart
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

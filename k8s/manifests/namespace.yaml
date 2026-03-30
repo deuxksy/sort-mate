@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: waste-helper
+  labels:
+    app.kubernetes.io/part-of: waste-helper
+    app.kubernetes.io/managed-by: kubectl
