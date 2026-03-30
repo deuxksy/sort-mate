@@ -169,7 +169,6 @@ relationship ManyToOne { FavoriteRegion(region) }
 relationship ManyToOne { Feedback(user) }
 relationship ManyToOne { Feedback(classification) }
 relationship ManyToOne { NotificationSetting(user) }
-relationship ManyToOne { WasteImage(classification) }
 ```
 
 ### API 엔드포인트
@@ -203,12 +202,23 @@ message AnalyzeRequest {
   string region_code = 4;    // 법정동코드
 }
 
+message DisposalMethod {
+  string method = 1;
+  repeated string notes = 2;
+  repeated DisposalItem items = 3;
+}
+
+message DisposalItem {
+  string label = 1;
+  string action = 2;
+}
+
 message AnalyzeResponse {
-  string waste_type = 1;       // 최종 분류
-  string disposal_method = 2; // 배출 방법 (JSON)
-  string cost_info = 3;       // 비용 정보
-  string warnings = 4;       // 주의사항
-  float confidence = 5;       // VLM 신뢰도
+  string waste_type = 1;           // 최종 분류
+  DisposalMethod disposal_method = 2; // 배출 방법 (JSON)
+  string cost_info = 3;           // 비용 정보
+  string warnings = 4;           // 주의사항
+  float confidence = 5;           // VLM 신뢰도
 }
 ```
 
@@ -250,6 +260,8 @@ regionSpecific:
   emdName: "역삼동"
   notes: "종이컵은 화장실 지정. 종량 배출 가능"
 source: "VLM_ANALYSIS"
+# regionCode 미전송 시 응답:
+# regionSpecific: null  # "지역 정보가 없습니다. 기본 배출 요령을 확인하세요."
 cached: false
 
 # Response 429
@@ -292,7 +304,7 @@ GET /api/v1/search-histories?page=0&size=20&sort=classifiedAt,desc
 - **전송 방식**: multipart/form-data (이미지 바이너리 + 메타데이터 JSON)
 - **응답 캐싱**: 동일 분류+지역 조합은 Redis TTL 24h 캐시
 - **Vector DB**: VLM 응답 임베딩 저장 → 유사 질문 시 캐시 hit
-- **API 버전 관리**: URL 경로에 `/v1/` prefix, Breaking change 시 `/v2/` 추가, 기존 버전 deprecated 처리
+- **API 버전 관리**: URL 경로에 `/v1/` prefix, Breaking change 시 `/v2/` 추가, 기존 버전 최소 6개월 유지(deprecated 안내), N+1 릴리스 시 N-1 버전 shutdown 3개월 전 예고
 
 ## 5. VLM 서비스 (Qwen3-VL-4B)
 
@@ -690,7 +702,7 @@ COMMIT;
 | 컨테이너 | Trivy 이미지 스캔, non-root 컨테이너 실행 |
 | 감사(Audit) | 분류 API 호출 로그 → Loki 적재, 90일 보관 |
 
-## 9. 결정사항 요약
+## 15. 결정사항 요약
 
 | 항목 | 결정사항 |
 |------|---------|
