@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package vlm;
+
+option java_multiple_files = true;
+option java_package = "com.waste.helper.grpc.vlm";
+
+service VLMInference {
+  rpc AnalyzeWaste(AnalyzeRequest) returns (AnalyzeResponse);
+}
+
+message AnalyzeRequest {
+  bytes image_data = 1;
+  string yolo_class = 2;
+  float confidence = 3;
+  string region_code = 4;
+}
+
+message DisposalMethod {
+  string method = 1;
+  repeated string notes = 2;
+  repeated DisposalItem items = 3;
+}
+
+message DisposalItem {
+  string label = 1;
+  string action = 2;
+}
+
+message AnalyzeResponse {
+  string waste_type = 1;
+  DisposalMethod disposal_method = 2;
+  string cost_info = 3;
+  string warnings = 4;
+  float confidence = 5;
+}
