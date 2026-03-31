@@ -1,4 +1,5 @@
 # k8s/manifests/grafana-deployment.yaml
+# NOTE: Apply with envsubst: envsubst < grafana-deployment.yaml | kubectl apply -f -
 
 apiVersion: apps/v1
 kind: Deployment
@@ -22,7 +23,11 @@ spec:
         - containerPort: 3000
         env:
         - name: GF_SECURITY_ADMIN_PASSWORD
-          value: "admin"
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: GF_ADMIN_PASSWORD
+              optional: true
 
 ---
 apiVersion: v1
