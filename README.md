@@ -2,6 +2,25 @@
 
 > **waste-helper** — AI 기반 폐기물 분류 도우미
 
+## 아키텍처
+
+```
+┌──────────────┐   WiFi/5G   ┌──────────────────┐   gRPC    ┌─────────────────┐
+│ React Native  │──────────▶│ JHipster API      │────────▶│ VLM Service      │
+│ Mobile App    │◀──────────│ Server (Spring)   │◀────────│ (Qwen3-VL-4B)    │
+│ YOLO TFLite   │  result   │ REST API + JWT    │  detail  │ vLLM + FastAPI   │
+└──────────────┘            └────────┬─────────┘          └─────────────────┘
+      │                              │          ▲
+      │ 오프라인 1차 분류             │          │
+      ▼                              ▼          │
+                             ┌──────────┐  ┌──────────┐
+                             │PostgreSQL│  │  Redis    │
+                             │ (영구 저장)│  │(캐시/세션)│
+                             └──────────┘  └──────────┘
+```
+
+> 전체 다이어그램(데이터 흐름, K8s 배포, 인증, GitOps 등)은 [docs/architecture.md](docs/architecture.md) 참조
+
 ## 구조
 
 ```
