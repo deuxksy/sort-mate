@@ -24,7 +24,7 @@ endif
 # Build
 # =============================================================================
 
-.PHONY: build build-api build-vlm build-all build-frontend run-frontend dev-frontend
+.PHONY: build build-api build-vlm build-all build-frontend
 
 build: build-api build-vlm ## 전체 빌드
 
@@ -38,18 +38,6 @@ build-all: build build-frontend ## 전체 빌드 (Backend + Frontend)
 
 build-frontend: ## Frontend TypeScript 타입 체크
 	cd frontend && npx tsc --noEmit
-
-# =============================================================================
-# Frontend
-# =============================================================================
-
-.PHONY: run-frontend dev-frontend
-
-run-frontend: ## Frontend Expo 개발 서버 실행
-	cd frontend && pnpm start
-
-dev-frontend: ## Frontend Expo 개발 서버 실행 (run-frontend alias)
-	cd frontend && pnpm start
 
 # =============================================================================
 # Test
@@ -69,19 +57,22 @@ test-vlm: ## VLM Service 테스트
 # Local Development
 # =============================================================================
 
-.PHONY: dev dev-up dev-down dev-logs
+.PHONY: loc loc-up loc-down loc-logs loc-frontend
 
-dev: dev-up ## 로컬 개발 환경 시작 (Docker Compose)
+loc: loc-up ## 로컬 개발 환경 시작 (Docker Compose)
 
-dev-up: ## 인프라(PostgreSQL, Redis) + API Server 시작
+loc-up: ## 인프라(PostgreSQL, Redis) + API Server 시작
 	cd api-server/src/main/docker && docker compose -f services.yml up -d
 	cd api-server && ./gradlew bootRun
 
-dev-down: ## 로컬 개발 환경 중지
+loc-down: ## 로컬 개발 환경 중지
 	cd api-server/src/main/docker && docker compose -f services.yml down
 
-dev-logs: ## 로컬 개발 환경 로그
+loc-logs: ## 로컬 개발 환경 로그
 	cd api-server/src/main/docker && docker compose -f services.yml logs -f
+
+loc-frontend: ## Frontend Expo 개발 서버 실행
+	cd frontend && pnpm start
 
 # =============================================================================
 # K8s Deploy
