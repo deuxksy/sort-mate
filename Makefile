@@ -47,7 +47,7 @@ build-frontend: ## Frontend TypeScript 타입 체크
 # Test
 # =============================================================================
 
-.PHONY: test test-api test-vlm test-frontend
+.PHONY: test test-api test-vlm test-frontend test-frontend-doctor
 
 test: test-api ## 전체 테스트
 
@@ -59,6 +59,8 @@ test-vlm: ## VLM Service 테스트
 
 test-frontend: ## Frontend Expo dev 서버 시작 테스트
 	cd frontend && npx expo start --clear & EXPO_PID=$$!; sleep 10; kill $$EXPO_PID 2>/dev/null; echo "Expo dev server test passed"
+test-frontend-doctor: ## Frontend Expo 의존성 호환성 검사
+	cd frontend && npx expo-doctor
 
 # =============================================================================
 # Local Development
