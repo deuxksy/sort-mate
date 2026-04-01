@@ -61,6 +61,8 @@ test-frontend: ## Frontend Expo dev 서버 시작 테스트
 	cd frontend && npx expo start --clear & EXPO_PID=$$!; sleep 10; kill $$EXPO_PID 2>/dev/null; echo "Expo dev server test passed"
 test-frontend-doctor: ## Frontend Expo 의존성 호환성 검사
 	cd frontend && npx expo-doctor
+test-frontend-export: ## Frontend Web 번들링 테스트
+	cd frontend && npx expo export --platform web --output-dir /tmp/expo-test-export && rm -rf /tmp/expo-test-export
 
 # =============================================================================
 # Local Development
