@@ -11,9 +11,13 @@ Thumbs.db
 
 # OMV internal
 .omc/
+.superpowers/
 
 # Node
 node_modules/
+
+# Expo
+.expo/
 
 # Build
 build/
