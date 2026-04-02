@@ -26,7 +26,7 @@ frontend/
 │   ├── _layout.tsx         # 루트 레이아웃
 │   └── +not-found.tsx
 ├── components/
-│   ├── camera/             # CameraView, CaptureButton
+│   ├── camera/             # CameraView (expo-image-picker)
 │   └── ui/                 # LoadingOverlay, ErrorMessage
 ├── hooks/                  # useClassify (촬영→압축→API→결과)
 ├── services/               # api.ts (fetch), image.ts (압축)
