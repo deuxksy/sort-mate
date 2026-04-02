@@ -5,7 +5,7 @@ metadata:
   name: api-server
   namespace: waste-helper
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: api-server
@@ -47,8 +47,8 @@ spec:
           value: "vlm-service:50051"
         resources:
           requests:
-            memory: "1Gi"
-            cpu: "500m"
+            memory: "512Mi"
+            cpu: "250m"
         livenessProbe:
           httpGet:
             path: /management/health
