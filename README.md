@@ -18,7 +18,7 @@ graph LR
 
 ```
 waste-helper/
-├── api-server/          # JHipster API 서버 (Spring Boot 3.x)
+├── api-server/          # JHipster API 서버 (Spring Boot 4.0)
 ├── frontend/            # 모바일/웹 프론트엔드 (Expo SDK 54)
 ├── mock-vlm/            # Mock VLM gRPC 서비스 (Python)
 ├── vlm-service/         # VLM gRPC 서비스 (Qwen3-VL-4B, GPU)
@@ -32,7 +32,7 @@ waste-helper/
 | Component   | Technology                                    |
 |-------------|-----------------------------------------------|
 | Frontend    | Expo SDK 54, React Native 0.81, NativeWind v4 |
-| API Server  | Spring Boot 3.x, JHipster 9, Java 21         |
+| API Server  | Spring Boot 4.0, JHipster 9, Java 21          |
 | VLM Service | Python 3.12, gRPC, Qwen3-VL-4B               |
 | Database    | PostgreSQL + Redis                            |
 | Infra       | Proxmox Kubernetes (OrbStack), ArgoCD         |

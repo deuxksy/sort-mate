@@ -19,7 +19,7 @@ graph TB
         end
 
         subgraph API["🔧 API Server (JHipster)"]
-            API1["api-server<br/>Spring Boot 3.x"]
+            API1["api-server<br/>Spring Boot 4.0"]
             RateLimit["RateLimitFilter<br/>Bucket4j"]
             GrpcClient["gRPC Stub<br/>VLMInference"]
             Cache["Redis Cache<br/>TTL 24h"]
