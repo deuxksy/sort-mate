@@ -8,58 +8,42 @@
 
 ```mermaid
 graph TB
-    subgraph Client["📱 Client (React Native)"]
-        Camera["📷 Camera<br/>YOLO TFLite 온디바이스"]
-        App[" waste-helper App<br/>Zustand + React Navigation"]
+    subgraph Client["📱 Client"]
+        Camera["📷 Camera<br/>expo-image-picker"]
+        App[" waste-helper App<br/>Expo SDK 54 + expo-router v6"]
     end
 
-    subgraph K8s["☸️ Proxmox Kubernetes Cluster"]
-        subgraph Ingress["🌐 Ingress"]
-            Nginx["NGINX Ingress<br/>+ cert-manager (TLS)"]
+    subgraph K8s["☸️ Kubernetes Cluster (OrbStack / Proxmox)"]
+        subgraph FE["🖥️ Frontend"]
+            NginxFE["nginx<br/>Expo Web Static + API Proxy"]
         end
 
         subgraph API["🔧 API Server (JHipster)"]
-            API1["api-server-0<br/>Spring Boot 3.x"]
-            API2["api-server-1<br/>Spring Boot 3.x"]
+            API1["api-server<br/>Spring Boot 3.x"]
             RateLimit["RateLimitFilter<br/>Bucket4j"]
             GrpcClient["gRPC Stub<br/>VLMInference"]
             Cache["Redis Cache<br/>TTL 24h"]
         end
 
         subgraph VLM["🤖 VLM Service"]
-            VLM1["vlm-service<br/>FastAPI + gRPC"]
-            vLLM["vLLM Runtime<br/>Qwen3-VL-4B"]
-            HPA["HPA<br/>1~3 replicas"]
+            VLM1["vlm-service<br/>gRPC Server"]
+            VLMNote["Mock: Python gRPC<br/>Prod: Qwen3-VL-4B"]
         end
 
         subgraph Data["💾 Data Layer"]
             PG["PostgreSQL 16<br/>StatefulSet + PVC 10Gi"]
             Redis["Redis 7<br/>Cache & Session"]
         end
-
-        subgraph Monitor["📊 Observability"]
-            Prom["Prometheus"]
-            Grafana["Grafana"]
-        end
     end
 
-    subgraph External["🌐 External"]
-        PublicAPI["공공데이터포털 API<br/>환경부 배출정보"]
-    end
-
-    Camera -->|"1차 분류<br/>(오프라인)"| App
-    App -->|"POST /api/v1/classify/detail<br/>multipart/form-data"| Nginx
-    Nginx --> API1 & API2
-    API1 & API2 --> RateLimit
-    RateLimit --> GrpcClient
+    Camera -->|"이미지 촬영<br/>(웹: file input)"| App
+    App -->|"POST /api/v1/classify/detail<br/>multipart/form-data"| NginxFE
+    NginxFE -->|"proxy_pass /api/"| API1
+    API1 --> RateLimit --> GrpcClient
     GrpcClient -->|"gRPC :50051<br/>AnalyzeWaste()"| VLM1
-    VLM1 --> vLLM
-    API1 & API2 <-->|"조회/저장"| PG
-    API1 & API2 <-->|"캐시"| Redis
-    API1 & API2 -.->|"OpenFeign<br/>Spring Batch (주간)"| PublicAPI
-    Prom -.-> API1 & API2 & VLM1
-    Grafana -.-> Prom
-    HPA -.-> VLM1
+    VLM1 --> VLMNote
+    API1 <-->|"조회/저장"| PG
+    API1 <-->|"캐시"| Redis
 ```
 
 ---
@@ -261,4 +245,107 @@ graph LR
     GitHub --- Repo
     App --> Sync
     Diff -->|"Git Diff"| GitHub
+```
+
+---
+
+## 8. Frontend 아키텍처
+
+```mermaid
+graph TB
+    subgraph Expo["Expo SDK 54 App"]
+        Router["expo-router v6<br/>File-based Routing"]
+        Tabs["(tabs)/<br/>Bottom Tab Navigator"]
+        Classify["/classify/result<br/>분류 결과 상세"]
+    end
+
+    subgraph CameraModule["📷 Camera"]
+        ImagePicker["expo-image-picker<br/>launchCameraAsync()"]
+        WebFallback["Web: input[type=file]<br/>capture=environment"]
+        Native["Native: 카메라 직접 제어"]
+    end
+
+    subgraph Services["Services"]
+        APIClient["api.ts<br/>fetch + FormData"]
+        ImageComp["image.ts<br/>expo-image-manipulator<br/>압축 + 리사이즈"]
+    end
+
+    subgraph Hooks["Hooks"]
+        UseClassify["useClassify<br/>촬영 → 압축 → API → 결과"]
+    end
+
+    Router --> Tabs
+    Tabs -->|"onCapture(uri)"| UseClassify
+    UseClassify --> ImagePicker
+    UseClassify --> ImageComp
+    UseClassify --> APIClient
+    ImagePicker --> WebFallback
+    ImagePicker --> Native
+    APIClient -->|"POST /api/v1/classify/detail<br/>multipart/form-data"| Nginx["nginx Proxy"]
+    UseClassify -->|"result"| Classify
+```
+
+### Frontend 기술 스택
+
+| 항목 | 기술 |
+|------|------|
+| Framework | Expo SDK 54, React Native 0.81 |
+| Routing | expo-router v6 (file-based) |
+| Styling | NativeWind v4 (Tailwind CSS) |
+| Camera | expo-image-picker (웹/네이티크 호환) |
+| 이미지 처리 | expo-image-manipulator (압축/리사이즈) |
+| 상태 관리 | React Hooks (useClassify) |
+| 웹 배포 | nginx (정적 파일 + API 프록시) |
+
+### 웹 vs 네이티브 카메라 동작
+
+| Platform | 동작 |
+|----------|------|
+| **웹 브라우저** | `<input type="file" capture="environment">` → OS 카메라 앱 호출 |
+| **iOS/Android 앱** | `expo-image-picker` native 카메라 모듈 직접 실행 |
+
+### nginx 프록시 설정
+
+```nginx
+# /api/ → API Server (K8s 내부 통신)
+location /api/ {
+    proxy_pass http://api-server:8080/api/;
+    proxy_connect_timeout 10s;
+    proxy_read_timeout 30s;
+}
+```
+
+---
+
+## 9. Mock VLM Service
+
+개발 환경에서 실제 AI 모델(Qwen3-VL-4B) 없이 gRPC 응답을 테스트하기 위한 Mock 서비스.
+
+```mermaid
+graph LR
+    API["API Server"] -->|"gRPC :50051<br/>AnalyzeWaste()"| Mock["mock-vlm<br/>Python gRPC Server"]
+    Mock --> WASTE_DATA["WASTE_DATA dict<br/>plastic, glass, paper,<br/>metal, food_waste, general"]
+    Health["Health Check<br/>Flask :8000"]
+```
+
+| Port | Protocol | 용도 |
+|------|----------|------|
+| 50051 | gRPC | AnalyzeWaste RPC |
+| 8000 | HTTP | /health 엔드포인트 |
+
+### Mock 응답 예시
+
+```json
+{
+  "waste_type": "플라스틱",
+  "disposal_method": {
+    "method": "재활용 분리배출",
+    "notes": ["라벨 제거 후 배출", "내용물 비우고 헹구기"],
+    "items": [
+      {"label": "본체", "action": "재활용"},
+      {"label": "라벨", "action": "제거 후 일반 쓰레기"}
+    ]
+  },
+  "confidence": 0.9
+}
 ```

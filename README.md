@@ -127,5 +127,8 @@ frontend/
 
 ## 문서
 
+자세한 내용은 `docs/` 디렉토리를 참조하세요.
+
 - [시스템 아키텍처](docs/architecture.md)
 - [Backend 설계 문서](docs/superpowers/specs/2026-03-30-waste-helper-backend-design.md)
+- [Frontend 설계 문서](docs/superpowers/specs/2026-04-01-frontend-design.md)
