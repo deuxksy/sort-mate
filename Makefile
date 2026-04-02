@@ -1,13 +1,14 @@
 # =============================================================================
-# Waste Helper Backend — Makefile
+# Waste Helper — Makefile
 # =============================================================================
-# 하위 프로젝트(api-server, vlm-service, k8s)의 build/deploy 관리
+# 하위 프로젝트(api-server, vlm-service, mock-vlm, frontend, k8s)의 build/deploy 관리
 
 .DEFAULT_GOAL := help
 
 # --- 설정 ---
 NAMESPACE   ?= waste-helper
 K8S_DIR    := k8s/manifests
+LOCAL_DIR  := k8s/manifests/local
 ENV_FILE   ?= .env
 
 # Docker 이미지 태그
@@ -17,6 +18,11 @@ FRONTEND_IMAGE ?= waste-helper/frontend:latest
 
 # 빌드 플랫폼 (로컬: 비워둠, 운영: PLATFORM=linux/amd64)
 PLATFORM_FLAG := $(PLATFORM:%=--platform %)
+
+# Port-forward 설정
+PF_FRONTEND_PORT ?= 33080
+PF_API_PORT      ?= 32067
+PF_BIND          ?= 0.0.0.0
 
 # 환경변수 로드 (존재할 경우)
 ifneq ($(wildcard $(ENV_FILE)),)
@@ -28,16 +34,19 @@ endif
 # Build
 # =============================================================================
 
-.PHONY: build build-api build-vlm build-all build-frontend build-frontend-docker
+.PHONY: build build-api build-vlm build-mock-vlm build-all build-frontend build-frontend-docker
 
-build: build-api build-vlm ## 전체 빌드
+build: build-api build-mock-vlm ## 전체 빌드 (Backend)
 
 build-api: ## API Server 빌드 (Gradle bootJar + Docker 이미지)
 	cd api-server && ./gradlew bootJar -x test
 	docker build $(PLATFORM_FLAG) -f api-server/Dockerfile.local -t $(API_IMAGE) api-server/
 
-build-vlm: ## VLM Service Docker 이미지 빌드
+build-vlm: ## VLM Service Docker 이미지 빌드 (실제 GPU 서비스)
 	docker build -t $(VLM_IMAGE) vlm-service/
+
+build-mock-vlm: ## Mock VLM Docker 이미지 빌드 (GPU 불필요)
+	docker build -t $(VLM_IMAGE) mock-vlm/
 
 build-all: build build-frontend-docker ## 전체 빌드 (Backend + Frontend Docker 이미지)
 
@@ -69,34 +78,73 @@ test-frontend-export: ## Frontend Web 번들링 테스트
 	cd frontend && npx expo export --platform web --output-dir /tmp/expo-test-export && rm -rf /tmp/expo-test-export
 
 # =============================================================================
-# Local Development
+# Local K8s Development
 # =============================================================================
 
-.PHONY: loc loc-up loc-down loc-logs loc-frontend
+.PHONY: loc-up loc-down loc-logs loc-frontend
 
-loc: loc-up ## 로컬 개발 환경 시작 (Docker Compose)
+loc-up: ## 로컬 K8s 전체 스택 배포 (infra + backend + frontend)
+	kubectl apply -f $(K8S_DIR)/namespace.yaml
+	kubectl apply -f $(K8S_DIR)/postgres-secret.yaml
+	kubectl apply -f $(K8S_DIR)/postgres-statefulset.yaml
+	kubectl apply -f $(K8S_DIR)/redis-deployment.yaml
+	kubectl apply -f $(LOCAL_DIR)/vlm-deployment-local.yaml
+	kubectl apply -f $(LOCAL_DIR)/api-server-deployment-local.yaml
+	kubectl apply -f $(K8S_DIR)/frontend-deployment.yaml
+	@echo "✓ 로컬 K8s 스택 배포 완료. 'make pf' 로 port-forward 실행"
 
-loc-up: ## 인프라(PostgreSQL, Redis) + API Server 시작
-	cd api-server/src/main/docker && docker compose -f services.yml up -d
-	cd api-server && ./gradlew bootRun
+loc-down: ## 로컬 K8s 전체 스택 중지 (Namespace 삭제)
+	kubectl delete namespace $(NAMESPACE) --ignore-not-found=true
+	@echo "✓ Namespace $(NAMESPACE) 삭제 완료"
 
-loc-down: ## 로컬 개발 환경 중지
-	cd api-server/src/main/docker && docker compose -f services.yml down
-
-loc-logs: ## 로컬 개발 환경 로그
-	cd api-server/src/main/docker && docker compose -f services.yml logs -f
+loc-logs: ## 로컬 K8s 전체 로그 확인
+	kubectl logs -n $(NAMESPACE) -l app --all-containers=true -f
 
 loc-frontend: ## Frontend Expo 개발 서버 실행
 	cd frontend && pnpm start
 
 # =============================================================================
-# K8s Deploy
+# Local Docker Compose (API Server + 인프라만)
 # =============================================================================
 
-.PHONY: deploy deploy-infra deploy-api deploy-vlm deploy-frontend deploy-monitoring \
+.PHONY: loc-infra-up loc-infra-down loc-infra-logs
+
+loc-infra-up: ## 인프라만 Docker Compose로 시작 (PostgreSQL, Redis)
+	cd api-server/src/main/docker && docker compose -f services.yml up -d
+	cd api-server && ./gradlew bootRun
+
+loc-infra-down: ## Docker Compose 인프라 중지
+	cd api-server/src/main/docker && docker compose -f services.yml down
+
+loc-infra-logs: ## Docker Compose 인프라 로그
+	cd api-server/src/main/docker && docker compose -f services.yml logs -f
+
+# =============================================================================
+# Port-forward (외부 기기 접근)
+# =============================================================================
+
+.PHONY: pf pf-frontend pf-api
+
+pf: ## 전체 port-forward (Frontend + API)
+	@echo "Frontend: http://$(PF_BIND):$(PF_FRONTEND_PORT)"
+	@echo "API:      http://$(PF_BIND):$(PF_API_PORT)"
+	kubectl port-forward -n $(NAMESPACE) svc/frontend $(PF_FRONTEND_PORT):80 --address $(PF_BIND) &
+	kubectl port-forward -n $(NAMESPACE) svc/api-server $(PF_API_PORT):8080 --address $(PF_BIND)
+
+pf-frontend: ## Frontend port-forward
+	kubectl port-forward -n $(NAMESPACE) svc/frontend $(PF_FRONTEND_PORT):80 --address $(PF_BIND)
+
+pf-api: ## API Server port-forward
+	kubectl port-forward -n $(NAMESPACE) svc/api-server $(PF_API_PORT):8080 --address $(PF_BIND)
+
+# =============================================================================
+# K8s Deploy (운영)
+# =============================================================================
+
+.PHONY: deploy deploy-infra deploy-api deploy-vlm deploy-mock-vlm deploy-frontend deploy-monitoring \
         deploy-all teardown
 
-deploy: deploy-infra deploy-api deploy-vlm deploy-frontend ## 전체 배포
+deploy: deploy-infra deploy-api deploy-mock-vlm deploy-frontend ## 전체 배포
 
 deploy-infra: ## Namespace + PostgreSQL + Redis 배포
 	kubectl apply -f $(K8S_DIR)/namespace.yaml
@@ -108,9 +156,12 @@ deploy-api: build-api ## API Server 이미지 빌드 + K8s 배포
 	kubectl apply -f $(K8S_DIR)/api-server-deployment.yaml
 	kubectl rollout restart deployment/api-server -n $(NAMESPACE)
 
-deploy-vlm: build-vlm ## VLM Service 이미지 빌드 + K8s 배포
+deploy-vlm: build-vlm ## VLM Service (실제 GPU) 이미지 빌드 + K8s 배포
 	kubectl apply -f $(K8S_DIR)/vlm-deployment.yaml
 	kubectl apply -f $(K8S_DIR)/vlm-hpa.yaml
+
+deploy-mock-vlm: build-mock-vlm ## Mock VLM 이미지 빌드 + K8s 배포
+	kubectl apply -f $(LOCAL_DIR)/vlm-deployment-local.yaml
 
 deploy-frontend: build-frontend-docker ## Frontend 이미지 빌드 + K8s 배포
 	kubectl apply -f $(K8S_DIR)/frontend-deployment.yaml
@@ -131,7 +182,7 @@ teardown: ## K8s Namespace 삭제 (전체 리소스 제거)
 	kubectl delete namespace $(NAMESPACE) --ignore-not-found=true
 
 # =============================================================================
-# Docker
+# Docker Push
 # =============================================================================
 
 .PHONY: docker-push docker-push-api docker-push-vlm

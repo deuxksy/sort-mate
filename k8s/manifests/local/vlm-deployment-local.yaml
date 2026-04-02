@@ -16,8 +16,8 @@ spec:
     spec:
       containers:
       - name: vlm-service
-        image: vlm-service:latest
-        imagePullPolicy: IfNotPresent
+        image: waste-helper/vlm-service:latest
+        imagePullPolicy: Never
         ports:
         - containerPort: 50051
           name: grpc
