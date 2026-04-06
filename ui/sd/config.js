@@ -15,7 +15,7 @@ StyleDictionary.registerFormat({
   format: function ({ dictionary }) {
     return dictionary.allTokens
       .map((t) => `export const ${toCamelCase(t.path)} = "${t.value}";`)
-      .join("\n");
+      .join("\n") + "\n";
   },
 });
 
