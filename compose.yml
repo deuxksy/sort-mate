@@ -1,0 +1,23 @@
+services:
+  openui:
+    image: ghcr.io/wandb/openui
+    container_name: openui
+    ports:
+      - "7878:7878"
+    environment:
+      - OPENAI_API_KEY
+      - ANTHROPIC_API_KEY
+      - OLLAMA_HOST=http://host.docker.internal:11434
+    restart: unless-stopped
+
+  appsmith:
+    container_name: appsmith
+    image: appsmith/appsmith-ee:latest
+    ports:
+      - "8080:80"
+    volumes:
+      - appsmith-data:/appsmith-stacks
+    restart: unless-stopped
+
+volumes:
+  appsmith-data:

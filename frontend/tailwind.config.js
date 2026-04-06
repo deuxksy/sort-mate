@@ -1,20 +1,16 @@
 /** @type {import('tailwindcss').Config} */
+const designTokens = require("./tailwind.tokens.js");
+
 module.exports = {
-  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
+  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./stories/**/*.{js,jsx,ts,tsx}"],
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
       colors: {
-        primary: {
-          DEFAULT: "#22c55e",
-          dark: "#16a34a",
-          darker: "#166534",
-        },
-        eco: {
-          bg: "#f0faf0",
-          surface: "#ffffff",
-        },
+        ...designTokens.color,
       },
+      ...(designTokens.spacing ? { spacing: designTokens.spacing } : {}),
+      ...(designTokens.borderRadius ? { borderRadius: designTokens.borderRadius } : {}),
     },
   },
   plugins: [],

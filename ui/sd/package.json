@@ -1,0 +1,11 @@
+{
+  "name": "waste-helper-style-dictionary",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "style-dictionary build --config config.js"
+  },
+  "dependencies": {
+    "style-dictionary": "^4.3.2"
+  }
+}
