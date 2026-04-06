@@ -194,6 +194,45 @@ docker-push-vlm: build-vlm ## VLM Service 이미지 빌드 + Push
 	docker push $(VLM_IMAGE)
 
 # =============================================================================
+# UI Pipeline (Figma → OpenUI → Storybook → Appsmith)
+# =============================================================================
+
+.PHONY: token-sync token-build storybook storybook-build \
+        appsmith-up appsmith-down openui-up openui-down \
+        ui-pipeline
+
+token-sync: ## Figma Variables API → ui/tokens/tokens.json 동기화
+	@echo "Figma 토큰 동기화..."
+	cd ui/scripts && ./figma-sync.sh
+
+token-build: ## Style Dictionary → Tailwind tokens + Appsmith CSS
+	@echo "Style Dictionary 빌드..."
+	cd ui/scripts && ./sd-build.sh
+
+storybook: ## Storybook dev 서버 시작 (port 6006)
+	cd frontend && pnpm storybook
+
+storybook-build: ## Storybook 정적 빌드
+	cd frontend && pnpm storybook-build
+
+appsmith-up: ## Appsmith 컨테이너 시작 (port 8080)
+	docker compose up -d appsmith
+	@echo "✓ Appsmith: http://localhost:8080"
+
+appsmith-down: ## Appsmith 컨테이너 중지
+	docker compose stop appsmith
+
+openui-up: ## OpenUI + adapter 시작 (port 7878)
+	docker compose up -d openui
+	@echo "✓ OpenUI: http://localhost:7878"
+
+openui-down: ## OpenUI + adapter 중지
+	docker compose stop openui
+
+ui-pipeline: token-sync token-build ## 전체 UI 파이프라인 (sync → build)
+	@echo "✓ UI 파이프라인 완료. 'make storybook'으로 검증 시작"
+
+# =============================================================================
 # Utility
 # =============================================================================
 
