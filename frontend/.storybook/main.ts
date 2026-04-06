@@ -1,25 +1,5 @@
 import type { StorybookConfig } from "@storybook/react-vite";
-import { mergeConfig, type Plugin } from "vite";
-import path from "path";
-
-// react-native → react-native-web 강제 해석 플러그인
-function reactNativeWebAlias(): Plugin {
-  const webRoot = path.dirname(
-    require.resolve("react-native-web/package.json")
-  );
-  return {
-    name: "react-native-web-alias",
-    enforce: "pre",
-    resolveId(source) {
-      if (
-        source === "react-native" ||
-        source.startsWith("react-native/")
-      ) {
-        return { id: webRoot, moduleSideEffects: true };
-      }
-    },
-  };
-}
+import { mergeConfig } from "vite";
 
 const config: StorybookConfig = {
   stories: [
@@ -36,14 +16,14 @@ const config: StorybookConfig = {
   },
   viteFinal: async (config) => {
     return mergeConfig(config, {
-      plugins: [reactNativeWebAlias()],
       resolve: {
         alias: {
+          // react-native → react-native-web (ESM 엔트리)
           "react-native$": "react-native-web",
+          "react-native/": "react-native-web/",
         },
       },
       optimizeDeps: {
-        exclude: ["react-native"],
         include: ["react-native-web"],
       },
     });

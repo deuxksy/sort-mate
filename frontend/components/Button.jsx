@@ -22,9 +22,12 @@ export function Button({
     lg: "px-6 py-3 text-lg",
   };
 
+  const safeVariant = variantClasses[variant] ? variant : "primary";
+  const safeSize = sizeClasses[size] ? size : "md";
+
   return (
     <TouchableOpacity
-      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]}`}
+      className={`${baseClasses} ${variantClasses[safeVariant]} ${sizeClasses[safeSize]}`}
       onPress={onPress}
       disabled={disabled}
       activeOpacity={0.7}
