@@ -1,5 +1,7 @@
 """figma-to-code.py 단위 테스트"""
 
+import json
+
 import pytest
 from unittest.mock import patch, MagicMock
 
@@ -284,6 +286,82 @@ class TestSaveRawResponse:
         save_raw_response(output, "card", "data")
 
         assert (tmp_path / "generated" / "Card.raw.txt").exists()
+
+
+class TestMain:
+    """CLI 진입점 통합 테스트"""
+
+    def test_missing_token_exits(self):
+        from figma_to_code import main
+
+        with pytest.raises(SystemExit, match="1"):
+            with patch.dict("os.environ", {}, clear=True), patch("sys.argv", ["figma-to-code.py"]):
+                main()
+
+    def test_missing_file_key_exits(self):
+        from figma_to_code import main
+
+        with pytest.raises(SystemExit, match="1"):
+            with patch.dict("os.environ", {"FIGMA_TOKEN": "t"}, clear=False), patch("sys.argv", ["figma-to-code.py"]):
+                main()
+
+    def test_full_pipeline(self, tmp_path):
+        from figma_to_code import main
+
+        env = {
+            "FIGMA_TOKEN": "t",
+            "FIGMA_FILE_KEY": "k",
+            "OPENUI_BASE": "http://localhost:7878",
+            "OPENUI_MODEL": "test",
+        }
+
+        frames_resp = {
+            "document": {
+                "children": [
+                    {
+                        "name": "Home",
+                        "type": "CANVAS",
+                        "children": [
+                            {"id": "1:1", "name": "home-header", "type": "FRAME"},
+                        ],
+                    }
+                ]
+            }
+        }
+
+        images_resp = MagicMock(status_code=200)
+        images_resp.json.return_value = {"images": {"1:1": "https://cdn/img.png"}}
+
+        img_resp = MagicMock(status_code=200, content=b"png")
+        img_resp.raise_for_status = MagicMock()
+
+        sse_chunks = [
+            {"choices": [{"delta": {"content": "```jsx\n<View />\n```"}}]},
+        ]
+        sse_lines = ["data: " + json.dumps(c) for c in sse_chunks] + ["data: [DONE]"]
+        openui_resp = MagicMock(status_code=200)
+        openui_resp.raise_for_status = MagicMock()
+        openui_resp.iter_lines.return_value = iter(sse_lines)
+
+        def mock_get(url, **kwargs):
+            if "/v1/files/" in url:
+                return MagicMock(status_code=200, json=lambda: frames_resp)
+            if "/v1/images/" in url and "cdn" not in url:
+                return images_resp
+            if "cdn" in url:
+                return img_resp
+            return MagicMock(status_code=200)
+
+        with (
+            patch.dict("os.environ", env),
+            patch("figma_to_code.requests.get", side_effect=mock_get),
+            patch("figma_to_code.requests.post", return_value=openui_resp),
+            patch("sys.argv", ["figma-to-code.py", "--output", str(tmp_path)]),
+        ):
+            main()
+
+        assert (tmp_path / "HomeHeader.jsx").exists()
+        assert "<View />" in (tmp_path / "HomeHeader.jsx").read_text()
 
 
 def test_to_pascal_case_kebab():

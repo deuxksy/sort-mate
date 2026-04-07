@@ -11,6 +11,7 @@ Env:
     OPENUI_MODEL     (선택) glm-5.1
 """
 
+import argparse
 import base64
 import json
 import os
@@ -268,3 +269,85 @@ def to_pascal_case(name: str) -> str:
     """
     words = re.split(r"[-_\s]+", name.strip())
     return "".join(w[:1].upper() + w[1:] for w in words if w)
+
+
+def main():
+    """CLI 진입점."""
+    parser = argparse.ArgumentParser(
+        description="Figma Page → React/NativeWind 컴포넌트 자동 생성"
+    )
+    parser.add_argument("--page", default=None, help="대상 Figma Page 이름 (기본: 첫 번째)")
+    parser.add_argument(
+        "--output",
+        default=os.path.join("frontend", "components", "generated"),
+        help="출력 디렉터리 (기본: frontend/components/generated)",
+    )
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=30,
+        help="OpenUI 타임아웃 초 (기본: 30)",
+    )
+    args = parser.parse_args()
+
+    token = os.environ.get("FIGMA_TOKEN")
+    file_key = os.environ.get("FIGMA_FILE_KEY")
+    openui_base = os.environ.get("OPENUI_BASE", "http://localhost:7878")
+    model = os.environ.get("OPENUI_MODEL", "glm-5.1")
+
+    if not token:
+        print("오류: FIGMA_TOKEN 환경변수가 필요합니다.", file=sys.stderr)
+        sys.exit(1)
+    if not file_key:
+        print("오류: FIGMA_FILE_KEY 환경변수가 필요합니다.", file=sys.stderr)
+        sys.exit(1)
+
+    # 1. Page 내 프레임 목록 조회
+    try:
+        frames = fetch_page_frames(token, file_key, args.page)
+    except FigmaAPIError as exc:
+        print(f"오류: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    if not frames:
+        print("처리할 프레임이 없습니다.")
+        return
+
+    page_label = args.page or "(첫 번째)"
+    print(f"Page '{page_label}': {len(frames)}개 프레임 발견")
+
+    # 2. 프레임 PNG export
+    try:
+        exported = export_frame_images(token, file_key, frames)
+    except FigmaAPIError as exc:
+        print(f"오류: {exc}", file=sys.stderr)
+        sys.exit(1)
+
+    if not exported:
+        print("export된 프레임 이미지가 없습니다.")
+        return
+
+    # 3. 각 프레임 → 코드 생성 + 저장
+    saved = 0
+    failed = 0
+    for frame in exported:
+        print(f"  생성 중: {frame['name']}...", end=" ", flush=True)
+        code = generate_component_code(
+            openui_base, model, frame["image_b64"], frame["name"], args.timeout
+        )
+        if code:
+            path = save_component(args.output, frame["name"], code)
+            if path:
+                print(f"✓ → {path}")
+                saved += 1
+            else:
+                print("스킵 (파일 충돌)")
+        else:
+            print("✗ (코드 생성 실패)")
+            failed += 1
+
+    print(f"\n완료: {saved}개 생성, {failed}개 실패")
+
+
+if __name__ == "__main__":
+    main()
