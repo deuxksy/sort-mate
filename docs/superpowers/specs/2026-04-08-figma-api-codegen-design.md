@@ -7,7 +7,7 @@
 
 ## TL;DR
 
-Figma Page 단위로 프레임 이미지를 추출하여 Aperture Vision LLM에 전달, React + NativeWind 컴포넌트 코드를 자동 생성. `make figma-to-code` 하나로 Figma 시안 → 코드까지 자동화. Phase 1은 코드 생성까지, Phase 2에서 Storybook 자동 등록 확장.
+Figma Page 단위로 프레임 이미지를 추출하여 OpenUI API(Aperture Vision LLM 경유)에 전달, React + NativeWind 컴포넌트 코드를 자동 생성. `make figma-to-code` 하나로 Figma 시안 → 코드까지 자동화. Phase 1은 코드 생성까지, Phase 2에서 Storybook 자동 등록 확장.
 
 ## 1. 배경 및 동기
 
@@ -26,13 +26,15 @@ flowchart TB
     subgraph Phase1["Phase 1: Figma → 코드 생성 (본 설계)"]
         FAPI["Figma REST API<br/>/v1/files/{key}<br/>/v1/images/{key}"]
         SCRIPT["figma-to-code.py"]
-        APERTURE["Aperture Adapter<br/>:8765/v1/chat/completions"]
+        OUI["OpenUI FastAPI<br/>:7878/v1/chat/completions"]
+        APERTURE["Aperture Adapter<br/>:8765 → Tailscale AI"]
 
         FAPI -->|"1. Page 프레임 node_id 목록"| SCRIPT
         FAPI -->|"2. 프레임 PNG 이미지"| SCRIPT
-        SCRIPT -->|"3. 이미지 + 시스템 프롬프트<br/>(Vision LLM)"| APERTURE
-        APERTURE -->|"4. 스트리밍 코드"| SCRIPT
-        SCRIPT -->|"5. 컴포넌트 파일 저장"| COMP["frontend/components/generated/"]
+        SCRIPT -->|"3. 이미지 + 프롬프트<br/>(Vision LLM)"| OUI
+        OUI -->|"4. 프록시"| APERTURE
+        APERTURE -->|"5. 스트리밍 코드"| SCRIPT
+        SCRIPT -->|"6. 컴포넌트 파일 저장"| COMP["frontend/components/generated/"]
     end
 
     subgraph Phase2["Phase 2: Storybook 자동 등록 (향후)"]
@@ -45,7 +47,7 @@ flowchart TB
 
 | 결정 | 선택 | 이유 |
 |------|------|------|
-| LLM 호출 경로 | Aperture 직접 호출 | OpenUI 백엔드는 LLM 프록시 역할만, 중간 계층 불필요 |
+| LLM 호출 경로 | OpenUI API 경유 | CONTEXT.md 파이프라인(Figma→OpenUI→Storybook)과 일치, 검증된 프롬프트/후처리 활용 |
 | Figma 추출 단위 | Page | 여러 프레임 일괄 처리에 적합 |
 | 트리거 | Make 명령어 | CI/CD 통합 용이, 기존 패턴 일관성 |
 | 코드 타겟 | React + NativeWind | 기존 Frontend 스택과 동일 |
@@ -59,6 +61,7 @@ sequenceDiagram
     participant Make
     participant Script as figma-to-code.py
     participant Figma as Figma REST API
+    participant OpenUI as OpenUI :7878
     participant Aperture as Aperture :8765
 
     User->>Make: make figma-to-code PAGE="Home"
@@ -72,10 +75,11 @@ sequenceDiagram
         Script->>Figma: GET /v1/images/{key}?ids={id}&format=png&scale=2
         Figma-->>Script: PNG 다운로드 URL
 
-        Script->>Aperture: POST /v1/chat/completions
-        Note right of Aperture: model: glm-5.1<br/>messages: [system, user(image)]
-
-        Aperture-->>Script: SSE 스트리밍 응답
+        Script->>OpenUI: POST /v1/chat/completions
+        Note right of OpenUI: model: glm-5.1<br/>messages: [system, user(image)]
+        OpenUI->>Aperture: 프록시 요청
+        Aperture-->>OpenUI: 스트리밍 응답
+        OpenUI-->>Script: SSE 스트리밍 응답
 
         Script->>Script: 응답에서 JSX 코드 블록 추출
         Script->>Script: 파일 저장 (components/generated/)
@@ -91,7 +95,7 @@ sequenceDiagram
 | `GET /v1/files/{key}` | 전체 파일 구조 조회 | document tree (pages → frames) |
 | `GET /v1/images/{key}?ids=...&format=png&scale=2` | 프레임 PNG 렌더링 | `{node_id: image_url}` |
 
-### Aperture 요청 형식
+### OpenUI 요청 형식
 
 ```json
 {
@@ -146,8 +150,8 @@ frontend/
 |------|------|--------|------|
 | `FIGMA_TOKEN` | O | — | Figma Personal Access Token |
 | `FIGMA_FILE_KEY` | O | — | Figma 파일 키 (URL에서 추출) |
-| `APERTURE_BASE` | X | `http://localhost:8765` | Aperture API 베이스 URL |
-| `APERTURE_MODEL` | X | `glm-5.1` | 사용할 Vision LLM 모델 |
+| `OPENUI_BASE` | X | `http://localhost:7878` | OpenUI API 베이스 URL |
+| `OPENUI_MODEL` | X | `glm-5.1` | 사용할 Vision LLM 모델 |
 | `PAGE` | X | (첫 번째 페이지) | 대상 Figma Page 이름 |
 
 ### CLI
@@ -185,8 +189,8 @@ Output ONLY the JSX code inside a single ```jsx code block. No explanation.
 | Figma API 403 | TOKEN 만료 안내 후 종료 |
 | Figma API 404 | FILE_KEY 또는 PAGE 이름 확인 안내 |
 | 프레임 없음 | "지정 Page에 프레임이 없습니다" 안내 |
-| Aperture 연결 실패 | adapter 실행 상태 확인 안내 |
-| Aperture 타임아웃 | 30초 타임아웃, 해당 프레임 스킵 후 계속 |
+| OpenUI 연결 실패 | OpenUI 컨테이너 실행 상태 확인 (`make openui-up`) |
+| OpenUI 타임아웃 | 30초 타임아웃, 해당 프레임 스킵 후 계속 |
 | 코드 파싱 실패 | 원본 응답을 `.raw.txt`로 저장, 경고 출력 |
 | 파일 충돌 | 기존 파일 스킵, 경고 출력 |
 
@@ -194,20 +198,21 @@ Output ONLY the JSX code inside a single ```jsx code block. No explanation.
 
 | Phase | 범위 | 상태 |
 |-------|------|------|
-| Phase 1 | Figma API → Aperture → 컴포넌트 파일 생성 | 본 설계 |
+| Phase 1 | Figma API → OpenUI → Aperture → 컴포넌트 파일 생성 | 본 설계 |
 | Phase 2 | 생성 컴포넌트 → Storybook 스토리 자동 등록 | 향후 |
 | Phase 3 | Storybook 시각 리그레션 테스트 | 향후 |
 
 ## 9. 의존성
 
 - Python 3.12 (기존)
-- `requests` — Figma API + Aperture 호출
+- `requests` — Figma API + OpenUI API 호출
 - `base64` (표준 라이브러리) — 이미지 인코딩
 - 추가 패키지 설치 불필요 (표준 라이브러리 + requests만 사용)
 
 ## 10. 제약사항
 
 - Figma Pro 이상 계정 필요 (REST API 접근)
-- Aperture adapter 실행 상태 필수
+- OpenUI 컨테이너 실행 상태 필수 (`make openui-up` 선행)
+- Aperture adapter 실행 상태 필수 (OpenUI가 프록시)
 - Vision LLM 모델(glm-5.1) 이미지 입력 지원 필요
 - 생성 코드 품질은 LLM 성능에 의존 — 수동 검증 권장
