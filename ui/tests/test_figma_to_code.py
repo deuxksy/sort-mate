@@ -162,8 +162,78 @@ class TestExportFrameImages:
                 export_frame_images("bad", "k", [{"id": "1", "name": "x"}])
 
 
+class TestGenerateComponentCode:
+    """OpenUI SSE 스트리밍 파싱 + JSX 코드 추출"""
+
+    def _make_sse_lines(self, chunks):
+        """OpenAI 호환 SSE 응답 라인 생성"""
+        lines = []
+        for chunk in chunks:
+            import json
+            lines.append(f"data: {json.dumps(chunk)}")
+        lines.append("data: [DONE]")
+        return "\n".join(lines)
+
+    def _mock_response(self, sse_text):
+        """requests.post mock 응답 생성"""
+        lines = sse_text.split("\n")
+        mock_resp = MagicMock(status_code=200)
+        mock_resp.raise_for_status = MagicMock()
+        mock_resp.iter_lines = MagicMock(
+            return_value=iter(lines), decode_unicode=True
+        )
+        return mock_resp
+
+    def test_returns_code_from_sse(self):
+        from figma_to_code import generate_component_code
+
+        chunks = [
+            {"choices": [{"delta": {"content": "Here is ```jsx\n<div>"}}]},
+            {"choices": [{"delta": {"content": "Hello</div>\n```"}}]},
+        ]
+        mock_resp = self._mock_response(self._make_sse_lines(chunks))
+
+        with patch("figma_to_code.requests.post", return_value=mock_resp):
+            result = generate_component_code("http://localhost:7878", "glm-5.1", "b64", "test-frame")
+
+        assert result == "<div>Hello</div>"
+
+    def test_no_code_block_returns_none(self):
+        from figma_to_code import generate_component_code
+
+        chunks = [
+            {"choices": [{"delta": {"content": "Sorry, I cannot generate code."}}]},
+        ]
+        mock_resp = self._mock_response(self._make_sse_lines(chunks))
+
+        with patch("figma_to_code.requests.post", return_value=mock_resp):
+            result = generate_component_code("http://localhost:7878", "glm-5.1", "b64", "test")
+
+        assert result is None
+
+    def test_connection_error_returns_none(self):
+        from figma_to_code import generate_component_code
+
+        with patch("figma_to_code.requests.post", side_effect=Exception("Connection refused")), patch("sys.stderr"):
+            result = generate_component_code("http://localhost:7878", "glm-5.1", "b64", "test")
+
+        assert result is None
+
+    def test_extracts_tsx_code_block(self):
+        from figma_to_code import generate_component_code
+
+        chunks = [
+            {"choices": [{"delta": {"content": "```tsx\nexport default function App() { return <View />; }\n```"}}]},
+        ]
+        mock_resp = self._mock_response(self._make_sse_lines(chunks))
+
+        with patch("figma_to_code.requests.post", return_value=mock_resp):
+            result = generate_component_code("http://localhost:7878", "glm-5.1", "b64", "test")
+
+        assert "export default function App()" in result
+
+
 def test_to_pascal_case_kebab():
-    """kebab-case → PascalCase"""
     from figma_to_code import to_pascal_case
     assert to_pascal_case("home-header") == "HomeHeader"
 

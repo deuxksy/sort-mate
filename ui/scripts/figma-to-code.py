@@ -12,6 +12,8 @@ Env:
 """
 
 import base64
+import json
+import os
 import re
 import sys
 
@@ -126,6 +128,102 @@ def export_frame_images(token: str, file_key: str, frames: list[dict]) -> list[d
         })
 
     return results
+
+
+SYSTEM_PROMPT = """\
+You are a React + NativeWind (Tailwind CSS for React Native) component generator.
+
+Given a Figma frame screenshot, generate a single React component that:
+1. Uses NativeWind (className prop) for styling — no inline styles
+2. Is TypeScript-compatible (proper prop types via JSDoc)
+3. Supports common variants (size, variant, disabled) where applicable
+4. Uses only standard React Native components (View, Text, TouchableOpacity, Image, ScrollView)
+
+Output ONLY the JSX code inside a single ```jsx code block. No explanation."""
+
+
+def generate_component_code(
+    openui_base: str,
+    model: str,
+    image_b64: str,
+    frame_name: str,
+    timeout: int = 30,
+) -> str | None:
+    """OpenUI Vision LLM으로 컴포넌트 코드 생성.
+
+    Args:
+        openui_base: OpenUI API 베이스 URL
+        model: Vision LLM 모델명
+        image_b64: base64 인코딩된 프레임 PNG
+        frame_name: 프레임명 (프롬프트 컨텍스트용)
+        timeout: 요청 타임아웃(초)
+
+    Returns:
+        JSX 코드 문자열, 실패 시 None
+    """
+    url = f"{openui_base}/v1/chat/completions"
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/png;base64,{image_b64}"
+                        },
+                    },
+                    {
+                        "type": "text",
+                        "text": (
+                            f"Generate a React NativeWind component from this "
+                            f"Figma frame '{frame_name}'."
+                        ),
+                    },
+                ],
+            },
+        ],
+        "stream": True,
+    }
+
+    try:
+        resp = requests.post(
+            url, json=payload, stream=True, timeout=timeout
+        )
+        resp.raise_for_status()
+    except Exception as exc:
+        print(f"오류: OpenUI 호출 실패 ({frame_name}): {exc}", file=sys.stderr)
+        return None
+
+    # SSE 스트리밍 파싱
+    full_text = ""
+    for line in resp.iter_lines(decode_unicode=True):
+        if not line or not line.startswith("data: "):
+            continue
+        data = line[len("data: "):]
+        if data.strip() == "[DONE]":
+            break
+        try:
+            chunk = json.loads(data)
+            delta = chunk.get("choices", [{}])[0].get("delta", {})
+            content = delta.get("content", "")
+            if content:
+                full_text += content
+        except json.JSONDecodeError:
+            continue
+
+    # JSX 코드 블록 추출
+    match = re.search(r"```jsx\s*\n(.*?)```", full_text, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+
+    match = re.search(r"```(?:jsx|javascript|tsx?)\s*\n(.*?)```", full_text, re.DOTALL)
+    if match:
+        return match.group(1).strip()
+
+    return None
 
 
 def to_pascal_case(name: str) -> str:
