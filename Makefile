@@ -205,9 +205,9 @@ token-sync: ## Figma Variables API → ui/tokens/tokens.json 동기화
 	@echo "Figma 토큰 동기화..."
 	cd ui/scripts && ./figma-sync.sh
 
-figma-to-code: ## Figma Page → React/NativeWind 컴포넌트 자동 생성
+figma-to-code: ## Figma Page → React/NativeWind 컴포넌트 자동 생성 (PAGE=PageName)
 	$(call check_env,FIGMA_TOKEN)
-	python3 ui/scripts/figma-to-code.py --page "$(PAGE)"
+	python3 ui/scripts/figma-to-code.py $(PAGE:%=--page "%")
 
 token-build: ## Style Dictionary → Tailwind tokens + Appsmith CSS
 	@echo "Style Dictionary 빌드..."
